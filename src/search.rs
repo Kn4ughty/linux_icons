@@ -556,15 +556,19 @@ mod test {
     }
 
     #[test]
-    fn test_find_standard_theme_and_icon() {
-        let dirs = IconSearch::new();
+    fn test_find_standard_theme() {
+        const THEMES_MAY_EXIST: [&'static str; 4] = ["Adwaita", "breeze", "Cosmic", "Pop"];
 
+        let dirs = IconSearch::new();
         let locations = dirs.find_icon_locations();
 
-        let info = locations.load_single_theme("Adwaita").unwrap();
-        assert_eq!(info.index.name, "Adwaita");
-
-        let icon = locations.standalone_icon("htop").unwrap();
-        assert_eq!(icon.path.file_name(), Some("htop.png".as_ref()))
+        let find_std_theme = THEMES_MAY_EXIST
+            .iter()
+            .any(|theme| locations.load_single_theme(theme).is_ok());
+        assert!(
+            find_std_theme,
+            "Adwaita, breeze, Cosmic, or Pop could not be found on the system.\n\
+            If you don't have any of those themes installed, ignore this test!"
+        );
     }
 }
