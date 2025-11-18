@@ -548,7 +548,12 @@ mod test {
             .add_directories(["/this/path/probably/doesnt/exist/but/who/cares/"])
             .search();
 
-        assert!(_icons.dirs.contains(&"/this/path/probably/doesnt/exist/but/who/cares/".into()), "IconSearch contains the added directory");
+        assert!(
+            _icons
+                .dirs
+                .contains(&"/this/path/probably/doesnt/exist/but/who/cares/".into()),
+            "IconSearch contains the added directory"
+        );
 
         let _ = _icons.icons();
 
