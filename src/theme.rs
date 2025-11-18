@@ -131,11 +131,11 @@ impl Theme {
                         .join(sub_dir.directory_name.as_str())
                         .join(file_name);
 
-                    if path.exists() {
-                        if let Some(file) = IconFile::from_path(&path) {
-                            // exact match!
-                            return Some(file);
-                        }
+                    if path.exists()
+                        && let Some(file) = IconFile::from_path(&path)
+                    {
+                        // exact match!
+                        return Some(file);
                     }
                 }
             }
@@ -156,11 +156,11 @@ impl Theme {
                         let path = base_dir
                             .join(sub_dir.directory_name.as_str())
                             .join(file_name);
-                        if path.exists() {
-                            if let Some(file) = IconFile::from_path(&path) {
-                                min_dist = distance;
-                                best_icon = Some(file);
-                            }
+                        if path.exists()
+                            && let Some(file) = IconFile::from_path(&path)
+                        {
+                            min_dist = distance;
+                            best_icon = Some(file);
                         }
                     }
                 }
@@ -279,10 +279,8 @@ impl ThemeIndex {
 
                 let mut index = DirectoryIndex::parse(section);
 
-                if is_scaled_dir {
-                    if let Ok(index) = &mut index {
-                        index.is_scaled_dir = true;
-                    }
+                if is_scaled_dir && let Ok(index) = &mut index {
+                    index.is_scaled_dir = true;
                 }
 
                 Some(index)
