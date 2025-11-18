@@ -546,8 +546,11 @@ mod test {
     fn test_standard_usage() {
         let _icons = IconSearch::new()
             .add_directories(["/this/path/probably/doesnt/exist/but/who/cares/"])
-            .search()
-            .icons();
+            .search();
+
+        assert!(_icons.dirs.contains(&"/this/path/probably/doesnt/exist/but/who/cares/".into()), "IconSearch contains the added directory");
+
+        let _ = _icons.icons();
 
         // no panic
     }
