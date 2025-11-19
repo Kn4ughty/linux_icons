@@ -61,4 +61,5 @@ pub mod theme;
 
 pub use icon::*;
 pub use search::*;
-pub use theme::Icons;
+#[doc(inline)]
+pub use theme::*;
