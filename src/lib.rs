@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 //! Turns out finding icons correctly on linux is kind of hard.
 //!
 //! This crate, `icon`, implements the XDG icon theme specification fully, while (hopefully) giving maximum coverage in usecases without sacrificing speed or compliance.

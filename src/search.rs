@@ -13,6 +13,9 @@ macro_rules! states {
             pub trait Sealed {}
         }
 
+        /// Sealed trait to protect [IconSearch](crate::IconSearch)'s states from external implementations.
+        ///
+        /// You do not need to know this exists in order to use `icon`.
         pub trait TypeStateProtector: sealed::Sealed {}
 
         $(
@@ -25,6 +28,9 @@ macro_rules! states {
     };
 }
 
+/// Marker types used for the [IconSearch] builder.
+///
+/// Typically, you won't have to interact with these.
 pub mod states {
     states!(
         /// Initial state.
@@ -267,6 +273,10 @@ impl IconLocations {
         dirs.find_icon_locations()
     }
 
+    /// Collects all standalone icons, themes, and all the dependencies of the themes found.
+    ///
+    /// Wraps everything up into the central [Icons] struct, which may then be used to perform actual
+    /// icon lookups.
     pub fn icons(self) -> Icons {
         let themes = self.resolve();
 
@@ -289,10 +299,26 @@ impl IconLocations {
         }
     }
 
+    /// Resolve all themes found in the directories searched, returning a map of internal
+    /// theme names to [Theme]s you may use to find icons.
+    ///
+    /// *Resolving* in this context means:
+    /// - For each theme, finding the appropriate theme index file (see [ThemeInfo] and [ThemeIndex](crate::theme::ThemeIndex))
+    /// - Find all (transitive) dependencies of themes, performing the same operation(s) for them, and
+    /// - Pruning duplicate references in the dependency graph: after `resolve`, each theme has a
+    ///   _direct acyclic graph_ of its dependents computed.
     pub fn resolve(&self) -> HashMap<OsString, Arc<Theme>> {
         self.resolve_only(self.themes_directories.keys())
     }
 
+    /// Like [resolve](Self::resolve), but with a restricted set of themes to resolve.
+    ///
+    /// This still collects all dependencies of the icon themes: for example, \
+    /// - The `Adwaita` icon theme inherits `AdwaitaLegacy` and `hicolor`,
+    /// - The `AdwaitaLegacy` theme inherits `hicolor`,
+    /// - And `hicolor` inherits no other theme.
+    /// Thus, a call to `resolve_only(&["Adwaita"])` will still return a map with `Adwaita`,
+    ///   `AdwaitaLegacy` and `hicolor`.
     pub fn resolve_only<I, S>(&self, theme_names: I) -> HashMap<OsString, Arc<Theme>>
     where
         I: IntoIterator<Item = S>,
@@ -495,6 +521,13 @@ impl IconLocations {
         ThemeInfo::new_from_folders(internal_name.to_string_lossy().into_owned(), theme.clone())
     }
 
+    /// Look up a standalone icon by name.
+    ///
+    /// "Standalone" icons are icons that live outside icon themes, residing at the root in the
+    /// search directories instead. These icons do not have any size or scalability information attached to them.
+    ///
+    /// This function exists for use cases where you don't need theme information, but keep in mind
+    /// that its counterpart in [Icons]: [Icons::find_standalone_icon] is usually used instead.
     pub fn standalone_icon<S>(&self, icon_name: S) -> Option<&IconFile>
     where
         S: AsRef<OsStr>,

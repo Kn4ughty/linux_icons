@@ -25,8 +25,11 @@ impl IconFile {
 /// Supported image file formats for icons.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FileType {
+    /// `.png` files (Portable Network Graphics)
     Png,
+    /// `.xpm` files (X PixMap), an image file format used by the X window system.
     Xmp,
+    /// `.svg` files (Scalable Vector Graphics), for images that can be scaled to an arbitrary size.
     Svg,
 }
 

@@ -20,7 +20,9 @@ use std::sync::Arc;
 /// Icons::new().find_icon("firefox", 32, 1, "hicolor");
 /// ```
 pub struct Icons {
+    /// Map of "standalone" icons (icons not belonging to any icon theme) to their path.
     pub standalone_icons: HashMap<String, IconFile>,
+    /// Map of internal theme names to their corresponding [Theme]
     pub themes: HashMap<OsString, Arc<Theme>>,
 }
 
@@ -39,7 +41,7 @@ impl Icons {
         self.themes.get(theme_name).cloned()
     }
 
-    /// Like [`find_icon`], with `theme` being `"hicolor"`, which is the default icon theme.
+    /// Like [`find_icon`](self.find_icon), with `theme` being `"hicolor"`, which is the default icon theme.
     pub fn find_default_icon(&self, icon_name: &str, size: u32, scale: u32) -> Option<IconFile> {
         self.find_icon(icon_name, size, scale, "hicolor")
     }
@@ -104,10 +106,19 @@ pub struct Theme {
 }
 
 impl Theme {
+    /// Find an icon in this theme or any of its dependencies, with scale equal to 1.
+    ///
+    /// Also see [find_icon](Theme::find_icon)
     pub fn find_icon_unscaled(&self, icon_name: &str, size: u32) -> Option<IconFile> {
         self.find_icon(icon_name, size, 1)
     }
 
+    /// Find an icon in this theme or any of its dependencies.
+    ///
+    /// Arguments:
+    /// - `icon_name`: the canonical name of the icon **without** file extension.
+    /// - `size`: the size, in pixels, desired. The returned icon may not be this exact size in case an exact match couldn't be found.
+    /// - `scale`: the scale at which the icon will be displayed.
     pub fn find_icon(&self, icon_name: &str, size: u32, scale: u32) -> Option<IconFile> {
         self.find_icon_here(icon_name, size, scale).or_else(|| {
             // or find it in one of our parents
@@ -117,8 +128,10 @@ impl Theme {
         })
     }
 
-    // find an icon in this theme only, not checking parents.
-    fn find_icon_here(&self, icon_name: &str, size: u32, scale: u32) -> Option<IconFile> {
+    /// Find an icon in this theme only.
+    ///
+    /// Do not use this function if you need normal icon finding behaviour: use [find_icon](Theme::find_icon) instead.
+    pub fn find_icon_here(&self, icon_name: &str, size: u32, scale: u32) -> Option<IconFile> {
         const EXTENSIONS: [&str; 3] = ["png", "xmp", "svg"];
         let file_names = EXTENSIONS.map(|ext| format!("{icon_name}.{ext}"));
 
@@ -201,25 +214,42 @@ pub struct ThemeInfo {
     // additional groups?
 }
 
+/// An error occurred during theme index parsing.
+///
+/// This type is returned by [ThemeIndex::parse] and indirectly by [ThemeInfo::new_from_folders].
 #[derive(Debug, thiserror::Error)]
 pub enum ThemeParseError {
+    /// Missing the "Icon Theme" section.
     #[error("missing Icon Theme index or section")]
     NotAnIconTheme,
+    /// An attribute that is required, is missing.
     #[error("missing attribute `{0}`")]
     MissingRequiredAttribute(&'static str),
+    /// The file isn't encoded in UTF-8.
     #[error("the input wasn't in utf-8")]
     NotUtf8(#[from] std::str::Utf8Error),
+    /// Couldn't parse a `bool`ean where one was expected.
     #[error("a bool was expected but failed to parse")]
     ParseBoolError(#[from] std::str::ParseBoolError),
+    /// Couldn't parse a `bool`ean where one was expected.
     #[error("a number was expected but failed to parse")]
     ParseNumError(#[from] std::num::ParseIntError),
+    /// Couldn't parse a [DirectoryType](crate::DirectoryType) where one was expected.
     #[error("A directory type was invalid")]
     InvalidDirectoryType,
+    /// The file was not properly formatted as a freedesktop entry file.
+    ///
+    /// Entry files look like `.ini` files, but they are not the same.
+    /// Check out the specification for entry files [here](https://specifications.freedesktop.org/desktop-entry/latest/basic-format.html).
     #[error("invalid format for a freedesktop entry file")]
     ParseError(#[from] freedesktop_entry_parser::ParseError),
 }
 
 impl ThemeInfo {
+    /// Create a new `ThemeInfo` from a theme's internal name and the folders at which the theme
+    /// lives.
+    ///
+    /// This function will parse the first `index.theme` file found in the directories passed in.
     pub fn new_from_folders(internal_name: String, folders: Vec<PathBuf>) -> std::io::Result<Self> {
         let index_location = folders
             .iter()
@@ -270,6 +300,11 @@ pub struct ThemeIndex {
 }
 
 impl ThemeIndex {
+    /// Parse an icon theme index file by path.
+    ///
+    /// If this function fails to read the file, it will return the IO error that caused failure. \
+    /// If parsing the contents of the file failed, it will return [std::io::Error::other] with the
+    ///   responsible [ThemeParseError] inside.
     pub fn parse_from_file(path: &Path) -> std::io::Result<Self> {
         let bytes = std::fs::read(path)?;
         let index = ThemeIndex::parse(&bytes).map_err(std::io::Error::other)?;
@@ -277,6 +312,9 @@ impl ThemeIndex {
         Ok(index)
     }
 
+    /// Parse an icon theme index directory from the content, in bytes, of the file.
+    ///
+    /// See [ThemeParseError] for the errors this function may return.
     pub fn parse(bytes: &[u8]) -> Result<Self, ThemeParseError> {
         let mut entry: EntryIter = freedesktop_entry_parser::low_level::parse_entry(bytes);
 
@@ -437,6 +475,16 @@ impl DirectoryIndex {
         }
     }
 
+    /// Computes whether this directory "supports" icons with the provided `icon_size` (in pixels)
+    /// and scale (as a multiple of the size).
+    ///
+    /// The behaviour of this method depends on the [DirectoryType](DirectoryIndex#structfield.directory_type) of this directory.
+    /// If the type is:
+    /// - [DirectoryType::Fixed]: Only icons with the same size and scale as the directory match.
+    /// - [DirectoryType::Scalable]: Icons with a size between the directory's `min_size` and `max_size`, and equal scale, match.
+    /// - [DirectoryType::Threshold]: `icon_size` may only differ by the amount of `threshold` specified by the directory, and scale must match exactly.
+    ///
+    /// When this method returns `true`, the "size distance" of the provided size and scale to the directory's size and scale is considered to be 0.
     pub fn matches_size(&self, icon_size: u32, icon_scale: u32) -> bool {
         if self.scale != icon_scale {
             return false;
@@ -463,11 +511,27 @@ impl DirectoryIndex {
     }
 }
 
+/// The type of image scaling used for an icon theme subdirectory.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum DirectoryType {
+    /// Fixed-size images ([FileType::Png](crate::FileType::Png) and [FileType::Xmp](crate::FileType::Xmp)); these icons may not be scaled to any other size.
     Fixed,
+    /// For scalable (vector) graphics ([FileType::Svg](crate::FileType::Svg))
     Scalable,
+    /// For fixed-size images that may be scaled within a specified threshold.
+    ///
+    /// This is the default type, and by default the threshold is 2 pixels.
     Threshold,
+}
+
+/// The `Default` implementation for `DirectoryType` returns [DirectoryType::Threshold].
+///
+/// This is because the XDG Icon Theme specification mandates that if the type for a directory is
+/// not specified, it is chosen to be `Threshold`.
+impl Default for DirectoryType {
+    fn default() -> Self {
+        DirectoryType::Threshold
+    }
 }
 
 impl TryFrom<&str> for DirectoryType {
