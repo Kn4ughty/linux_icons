@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 pub struct IconFile {
     /// Absolute path to where this icon is found on disk.
     pub path: PathBuf,
-    /// The filetype of the icon, derived from its extension. May be `Png`, `Xmp` or `Svg`.
+    /// The filetype of the icon, derived from its extension. May be `Png`, `Xpm` or `Svg`.
     pub file_type: FileType,
 }
 
@@ -28,7 +28,7 @@ pub enum FileType {
     /// `.png` files (Portable Network Graphics)
     Png,
     /// `.xpm` files (X PixMap), an image file format used by the X window system.
-    Xmp,
+    Xpm,
     /// `.svg` files (Scalable Vector Graphics), for images that can be scaled to an arbitrary size.
     Svg,
 }
@@ -41,8 +41,8 @@ impl FileType {
 
         if ext.eq_ignore_ascii_case("png") {
             Some(FileType::Png)
-        } else if ext.eq_ignore_ascii_case("xmp") {
-            Some(FileType::Xmp)
+        } else if ext.eq_ignore_ascii_case("xpm") {
+            Some(FileType::Xpm)
         } else if ext.eq_ignore_ascii_case("svg") {
             Some(FileType::Svg)
         } else {
@@ -52,18 +52,18 @@ impl FileType {
 
     /// Provides a string representation of this `FileType`.
     ///
-    /// Each file type is mapped to its canonical, lowercase file extension ("png", "xmp", "svg").
+    /// Each file type is mapped to its canonical, lowercase file extension ("png", "xpm", "svg").
     pub fn ext(&self) -> &str {
         match self {
             FileType::Png => "png",
-            FileType::Xmp => "xmp",
+            FileType::Xpm => "xpm",
             FileType::Svg => "svg",
         }
     }
 
     /// Returns an array of all file types that icons may appear as.
     pub const fn types() -> [FileType; 3] {
-        [FileType::Png, FileType::Xmp, FileType::Svg]
+        [FileType::Png, FileType::Xpm, FileType::Svg]
     }
 }
 

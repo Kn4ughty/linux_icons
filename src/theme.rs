@@ -132,7 +132,7 @@ impl Theme {
     ///
     /// Do not use this function if you need normal icon finding behaviour: use [find_icon](Theme::find_icon) instead.
     pub fn find_icon_here(&self, icon_name: &str, size: u32, scale: u32) -> Option<IconFile> {
-        const EXTENSIONS: [&str; 3] = ["png", "xmp", "svg"];
+        const EXTENSIONS: [&str; 3] = ["png", "xpm", "svg"];
         let file_names = EXTENSIONS.map(|ext| format!("{icon_name}.{ext}"));
 
         let base_dirs = &self.info.base_dirs;
@@ -514,7 +514,7 @@ impl DirectoryIndex {
 /// The type of image scaling used for an icon theme subdirectory.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum DirectoryType {
-    /// Fixed-size images ([FileType::Png](crate::FileType::Png) and [FileType::Xmp](crate::FileType::Xmp)); these icons may not be scaled to any other size.
+    /// Fixed-size images ([FileType::Png](crate::FileType::Png) and [FileType::Xpm](crate::FileType::Xpm)); these icons may not be scaled to any other size.
     Fixed,
     /// For scalable (vector) graphics ([FileType::Svg](crate::FileType::Svg))
     Scalable,
