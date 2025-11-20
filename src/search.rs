@@ -1,5 +1,5 @@
 use crate::icon::IconFile;
-use crate::theme::{Icons, Theme, ThemeInfo, ThemeParseError};
+use crate::{Icons, Theme, ThemeInfo, ThemeParseError};
 use states::*;
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
@@ -317,6 +317,7 @@ impl IconLocations {
     /// - The `Adwaita` icon theme inherits `AdwaitaLegacy` and `hicolor`,
     /// - The `AdwaitaLegacy` theme inherits `hicolor`,
     /// - And `hicolor` inherits no other theme.
+    ///
     /// Thus, a call to `resolve_only(&["Adwaita"])` will still return a map with `Adwaita`,
     ///   `AdwaitaLegacy` and `hicolor`.
     pub fn resolve_only<I, S>(&self, theme_names: I) -> HashMap<OsString, Arc<Theme>>
