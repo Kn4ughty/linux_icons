@@ -485,29 +485,27 @@ fn find_attr_req<'a>(
 mod test {
     use crate::Icons;
     use crate::icon::FileType;
+    use crate::search::test::test_search;
     use crate::{DirectoryType, ThemeIndex};
     use std::error::Error;
     use std::path::Path;
     use std::time::{Duration, Instant};
 
     #[test]
-    fn test_find_firefox() {
-        let icons = Icons::new();
+    fn test_find_test_icon() {
+        let icons = test_search().search().icons();
 
-        let ico = icons.find_default_icon("firefox", 128, 1).unwrap();
+        let big_ico = icons.find_icon("happy", 64, 1, "TestTheme").unwrap();
+        assert!(big_ico.path().ends_with("TestTheme/32x32/foo/happy.png"));
+        assert_eq!(big_ico.file_type(), FileType::Png);
 
-        assert_eq!(
-            ico.path(),
-            Path::new("/usr/share/icons/hicolor/128x128/apps/firefox.png")
+        let small_ico = icons.find_icon("happy", 16, 1, "TestTheme").unwrap();
+        assert!(
+            small_ico.path().ends_with("TestTheme/16x16/α/happy.png"),
+            "{:?} matches the expected value",
+            small_ico.path()
         );
-        assert_eq!(ico.file_type(), FileType::Png);
-
-        // we should be able to find an icon for a bunch of different sizes
-        for size in (16u32..=64).step_by(8) {
-            assert!(icons.find_default_icon("firefox", size, 1).is_some());
-        }
-
-        assert!(icons.find_default_icon("firefox", 64, 2).is_some());
+        assert_eq!(small_ico.file_type(), FileType::Png);
     }
 
     #[test]

@@ -290,7 +290,11 @@ impl IconLocations {
         // Now, for each theme directory, add every file in it with a supported file extension
         // to the map:
         for path in self.themes_directories.values().flatten() {
-            for entry in walkdir::WalkDir::new(path).follow_links(true).into_iter().flatten() {
+            for entry in walkdir::WalkDir::new(path)
+                .follow_links(true)
+                .into_iter()
+                .flatten()
+            {
                 // Directories are not icons.
                 if entry.file_type().is_dir() {
                     continue;
@@ -622,14 +626,14 @@ impl Default for IconSearch {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use crate::search::IconSearch;
     use std::collections::HashSet;
     use std::path::PathBuf;
 
     static PROJ_ROOT: &'static str = env!("CARGO_MANIFEST_DIR");
 
-    fn test_search() -> IconSearch {
+    pub fn test_search() -> IconSearch {
         IconSearch::new_empty().add_directories([
             PathBuf::from(PROJ_ROOT).join("resources/test_icons"),
             PathBuf::from(PROJ_ROOT).join("resources/test_icons_alt"),
@@ -652,10 +656,7 @@ mod test {
         );
 
         // Two themes in the testing directories: TestTheme and OtherTheme
-        assert_eq!(
-            icons.icon_locations().themes_directories.len(),
-            2
-        );
+        assert_eq!(icons.icon_locations().themes_directories.len(), 2);
 
         let _ = icons.icons();
 
