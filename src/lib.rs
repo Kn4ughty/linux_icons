@@ -7,12 +7,36 @@
 //! # Quick start
 //!
 //! ```
+//! // Find all icon themes using the standard locations.
 //! let icons = icon::Icons::new();
 //!
+//! // Find an icon named "firefox" with size 128x128 in theme "Adwaita"
 //! let firefox: Option<icon::IconFile> = icons.find_icon("firefox", 128, 1, "Adwaita");
 //!
 //! println!("Firefox icon is at {:?}", firefox.unwrap().path)
 //! ```
+//!
+//! See [Icons].
+//!
+//! # Icon matching
+//!
+//! Matching a desired size and scale for an icon to the actual file for that size and scale isn't
+//! as simple as you'd hope for it to be.
+//!
+//! Concretely, icon themes organize icons into subdirectories that have a number of properties
+//! that specify how the icons in them are allowed to be used:
+//! - Directories can contain scalable graphics (SVGs), and specify a minimum and maximum pixel size
+//!   at which those graphics may be used. For example, an icon theme may have simplified SVGs for
+//!   displaying small icons, and more complex SVGs for when the icons are larger.
+//! - In case an odd size is requested, for example 30x30px (a size not present in most icon themes),
+//!   applications are expected to find the _next best match_ for that size. To accommodate that,
+//!   icon directories specify the base size of its icons and a threshold wherein applications can
+//!   choose to up- or downscale icons when an exact match to exist. For example, `hicolor`'s 32x32
+//!   directory specifies a threshold value of 2, meaning icons from 30x30px to 34x34px may be
+//!   displayed using the 32x32px images.
+//!
+//! `icon` (this crate)'s job is to make finding the **correct icon** for a given query as simple as
+//! possible.
 //!
 //! # High level design
 //!
