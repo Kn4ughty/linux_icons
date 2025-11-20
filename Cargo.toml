@@ -17,7 +17,7 @@ keywords = ["icon", "loader", "theme", "xdg"]
 categories = ["multimedia::images", "data-structures"]
 
 [dependencies]
-freedesktop_entry_parser = "2.0.1"
+freedesktop_entry_parser = { version = "2.0.1", default-features = false }
 thiserror = "2.0.17"
 xdg = "3.0.0"
 log = { version = "0.4.28", optional = true }

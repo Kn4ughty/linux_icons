@@ -152,7 +152,7 @@ pub enum ThemeParseError {
     /// Entry files look like `.ini` files, but they are not the same.
     /// Check out the specification for entry files [here](https://specifications.freedesktop.org/desktop-entry/latest/basic-format.html).
     #[error("invalid format for a freedesktop entry file")]
-    ParseError(#[from] freedesktop_entry_parser::ParseError),
+    ParseError(#[from] freedesktop_entry_parser::low_level::ParseError),
 }
 
 impl ThemeInfo {
@@ -467,7 +467,7 @@ fn find_attr<'a>(
         .attrs
         .iter()
         .find(|attr| attr.name == name.as_bytes() && attr.param.is_none())
-        .map(|attr| str::from_utf8(&*attr.value))
+        .map(|attr| str::from_utf8(&attr.value))
         .transpose()
 }
 
