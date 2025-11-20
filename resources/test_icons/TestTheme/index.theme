@@ -1,0 +1,26 @@
+[Icon Theme]
+Name=HelloTestTheme!
+Comment=This is a theme to test icon's capabilities.
+Hidden=true
+Inherits=OtherTheme
+
+Directories=16x16/α,16x16/β,32x32/foo,UnconventionalDirectoryName/γ,128x128
+
+# Some unicode to see that it's handled correctly.
+# ^ And a comment, because we want to make sure those are handled correctly too.
+[16x16/α]
+Size=16
+
+[16x16/β]
+Size=16
+Type=Fixed
+
+[32x32/foo]
+Size=32
+
+[UnconventionalDirectoryName/γ]
+Size=64
+
+# This directory is symlinked.
+[128x128]
+Size=128
