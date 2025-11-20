@@ -1,6 +1,6 @@
 use crate::ThemeParseError::MissingRequiredAttribute;
 use crate::icon::IconFile;
-use freedesktop_entry_parser::low_level::{EntryIter, SectionBytes};
+use freedesktop_entry_parser::low_level::{SectionBytes, SectionBytesIter};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -226,7 +226,7 @@ impl ThemeIndex {
     ///
     /// See [ThemeParseError] for the errors this function may return.
     pub fn parse(bytes: &[u8]) -> Result<Self, ThemeParseError> {
-        let mut entry: EntryIter = freedesktop_entry_parser::low_level::parse_entry(bytes);
+        let mut entry: SectionBytesIter = freedesktop_entry_parser::low_level::parse_entry(bytes);
 
         let icon_theme_section: SectionBytes =
             entry.next().ok_or(ThemeParseError::NotAnIconTheme)??;
@@ -467,7 +467,7 @@ fn find_attr<'a>(
         .attrs
         .iter()
         .find(|attr| attr.name == name.as_bytes() && attr.param.is_none())
-        .map(|attr| str::from_utf8(attr.value))
+        .map(|attr| str::from_utf8(&*attr.value))
         .transpose()
 }
 
