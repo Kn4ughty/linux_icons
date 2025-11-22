@@ -84,6 +84,7 @@ impl Theme {
         None
     }
 
+    #[allow(unused)] // Used with certain crate features.
     pub(crate) fn find_icon_files(
         &self,
         icon_name: &str,
