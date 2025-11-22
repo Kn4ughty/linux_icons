@@ -1,4 +1,5 @@
 #![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Turns out finding icons correctly on linux is kind of hard.
 //!
@@ -16,7 +17,15 @@
 //! println!("Firefox icon is at {:?}", firefox.unwrap().path())
 //! ```
 //!
-//! See [Icons].
+//! See [`Icons`].
+//!
+//! # Feature flags
+//!
+//! By default, **no features** are enabled.
+//!
+//! - **`log`**: Enable logging, which introduces a dependency on the `log` crate.
+//! - **`full-search`**: Enables "full icon search", to pre-fetch all available icons in a theme, accessed through [`IconLocations::full_icon_search`]. Introduces a dependency on the `walkdir` crate.
+//! - **`cache`**: Enables the caching versions of [`Icons`] and [`Theme`] ([`IconsCache`] and [`ThemeCache`]), which introduces a dependency on `qp-trie`.
 //!
 //! # Icon matching
 //!
@@ -53,7 +62,7 @@
 //!     While a number of directories should always be scanned for icons, the user or application is
 //!     allowed to search additional directories as it sees fit.
 //!
-//!     [IconSearch] handles this part, and is also the main entrypoint for `icon`.
+//!     [`IconSearch`] handles this part, and is also the main entrypoint for `icon`.
 //!
 //! 2.  *Parsing and resolving icon themes*:
 //!
@@ -83,10 +92,15 @@
 //!   - it only supports a rust-native icon cache, which you cannot opt out of.
 //!   - it provides only icon loading—you cannot use it to obtain information about Icon Themes.
 
+#[cfg(feature = "cache")]
+mod cache;
 mod icon;
 mod search;
 mod theme;
 
+#[cfg(feature = "cache")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
+pub use cache::*;
 pub use icon::*;
 pub use search::*;
 pub use theme::*;

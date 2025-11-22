@@ -4,6 +4,8 @@ use freedesktop_entry_parser::low_level::{SectionBytes, SectionBytesIter};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+pub(crate) type DirectoryRef = usize;
+
 /// An icon theme.
 pub struct Theme {
     /// Properties of this theme and all of its subdirectories.
@@ -25,6 +27,9 @@ impl Theme {
 
     /// Find an icon in this theme or any of its dependencies.
     ///
+    /// This function seeks to replicate the behaviour from the official icon lookup mechanism from
+    /// the Icon Theme specification, which you can find [here](https://specifications.freedesktop.org/icon-theme/latest/#icon_lookup).
+    ///
     /// Arguments:
     /// - `icon_name`: the canonical name of the icon **without** file extension.
     /// - `size`: the size, in pixels, desired. The returned icon may not be this exact size in case an exact match couldn't be found.
@@ -42,16 +47,10 @@ impl Theme {
     ///
     /// Do not use this function if you need normal icon finding behaviour: use [find_icon](Theme::find_icon) instead.
     pub fn find_icon_here(&self, icon_name: &str, size: u32, scale: u32) -> Option<IconFile> {
-        let sub_dirs = &self.info.index.directories;
-
         // first, try to find an exact icon size match:
-        let exact_sub_dirs = sub_dirs
-            .iter()
-            .filter(|sub_dir| sub_dir.matches_size(size, scale));
-
-        // First, try finding an exact size match.
+        let exact_sub_dirs = self.exact_sub_dirs_for(size, scale);
         if let Some(exact_match_icon) = exact_sub_dirs
-            .flat_map(|exact_sub_dir| self.find_icon_exact_in_directory(icon_name, exact_sub_dir))
+            .flat_map(|exact_sub_dir| self.find_icon_in_directory(icon_name, exact_sub_dir))
             .next()
         {
             // and return it if found!
@@ -64,9 +63,9 @@ impl Theme {
         // we opt to do the hopefully _less expensive_ operation of sorting the subdirectories instead,
         // from the smallest size_distance to largest.
         // that gives us the assurance that the first icon found, is the best one.
-        let mut sub_dirs = sub_dirs.iter().collect::<Vec<_>>();
+        let mut sub_dirs = self.info.index.directories.iter().collect::<Vec<_>>();
         sub_dirs.sort_by_key(|sub_dir| sub_dir.size_distance(size, scale));
-        
+
         for sub_dir in sub_dirs {
             for base_dir in &self.info.base_dirs {
                 for file_name in &Self::possible_file_names_for(icon_name) {
@@ -85,13 +84,40 @@ impl Theme {
         None
     }
 
+    pub(crate) fn find_icon_files(
+        &self,
+        icon_name: &str,
+    ) -> impl Iterator<Item = (DirectoryRef, IconFile)> {
+        self.info
+            .index
+            .directories
+            .iter()
+            .enumerate()
+            .flat_map(|(index, di)| {
+                self.find_icon_in_directory(icon_name, di)
+                    .map(|icon| (index, icon))
+            })
+    }
+
+    fn exact_sub_dirs_for(
+        &self,
+        size: u32,
+        scale: u32,
+    ) -> impl Iterator<Item = &DirectoryIndex> + Clone {
+        self.info
+            .index
+            .directories
+            .iter()
+            .filter(move |sub_dir| sub_dir.matches_size(size, scale))
+    }
+
     fn possible_file_names_for(icon_name: &str) -> [String; 3] {
         const EXTENSIONS: [&str; 3] = ["png", "xpm", "svg"];
 
         EXTENSIONS.map(|ext| format!("{icon_name}.{ext}"))
     }
 
-    fn find_icon_exact_in_directory(
+    pub(crate) fn find_icon_in_directory(
         &self,
         icon_name: &str,
         directory: &DirectoryIndex,
@@ -383,12 +409,20 @@ impl DirectoryIndex {
         })
     }
 
-    fn size_distance(&self, icon_size: u32, icon_scale: u32) -> u32 {
+    pub(crate) fn size_distance(&self, icon_size: u32, icon_scale: u32) -> u32 {
         let size = icon_size * icon_scale;
 
         match self.directory_type {
-            DirectoryType::Fixed | DirectoryType::Scalable => {
-                (self.size * self.scale).abs_diff(size)
+            DirectoryType::Fixed => (self.size * self.scale).abs_diff(size),
+            DirectoryType::Scalable => {
+                let lower = self.min_size * self.scale;
+                let higher = self.max_size * self.scale;
+
+                if size < lower {
+                    lower - size
+                } else {
+                    size.saturating_sub(higher)
+                }
             }
             DirectoryType::Threshold => {
                 let lower = (self.size - self.threshold) * self.scale;
