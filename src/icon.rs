@@ -1,4 +1,4 @@
-use crate::{IconSearch, Theme};
+use crate::{DirectoryIndex, IconSearch, Theme};
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use std::fmt::Display;
@@ -83,6 +83,105 @@ impl Icons {
     /// These icons do not have any size or scalability information attached to them.
     pub fn find_standalone_icon(&self, icon_name: &str) -> Option<IconFile> {
         self.standalone_icons.get(icon_name).cloned()
+    }
+
+    /// Find all icons in all themes, in all of their directories.
+    ///
+    /// Also see [`find_all_icons_filtered`](Icons::find_all_icons_filtered).
+    pub fn find_all_icons(&self) -> impl Iterator<Item = (Arc<Theme>, &DirectoryIndex, IconFile)> {
+        self.find_all_icons_filtered(|_| true, |_| true, |_| true)
+    }
+
+    /// Find all icons in all themes, in all of their directories, filtered at each stage by a predicate.
+    ///
+    /// This happens lazily: the function returns an iterator that only does the required work
+    /// when you advance it.
+    ///
+    /// <div class="warning">
+    ///
+    /// The output of this function does **not** include standalone icons.
+    /// If you need a full list of icons, use this method and chain it together with the content of
+    /// [`standalone_icons`](Icons#structfield.standalone_icons)
+    ///
+    /// </div>
+    ///
+    /// <div class="warning">
+    ///
+    /// This method is **not** meant for finding icons by name / size; use [`find_icon`](Icons::find_icon) for that.
+    ///
+    /// </div>
+    ///
+    /// # Example
+    ///
+    /// Find all icons belonging to a theme called "Adwaita", in a directory for icons size ≤ 128px:
+    ///
+    /// ```rust
+    /// use icon::{Icons, IconFile};
+    ///
+    /// let icons = Icons::new();
+    /// let adwaita: Vec<IconFile> = icons
+    ///     .find_all_icons_filtered(
+    ///         |theme| theme.info.internal_name == "Adwaita",
+    ///         |dir| dir.size <= 128,
+    ///         |_| true,
+    ///     )
+    ///     .map(|(_, _, icon)| icon)
+    ///     .collect();
+    /// ```
+    pub fn find_all_icons_filtered<'a>(
+        &'a self,
+        filter_theme: impl Fn(&Theme) -> bool + 'a,
+        filter_directory: impl Fn(&DirectoryIndex) -> bool + 'a,
+        filter_icon: impl Fn(&IconFile) -> bool + Clone + 'a,
+    ) -> impl Iterator<Item = (Arc<Theme>, &'a DirectoryIndex, IconFile)> {
+        // This function conjures up a big iterator over all icons,
+        // in all themes, in all theme directories. It does that by chaining (with `zip` and `repeat`)
+        // each "level" of the search together:
+
+        // First, find each icon theme, filtered by the `filter_theme` argument:
+        let themes = self
+            .themes
+            .iter()
+            .map(|(_, theme)| theme)
+            .filter(move |theme| filter_theme(theme.as_ref()));
+
+        // Create an iterator that yields each icon theme × icon theme's directories
+        // Item = (&Arc<Theme>, &DirectoryIndex)
+        let dirs = themes
+            .flat_map(|theme| {
+                std::iter::zip(
+                    std::iter::repeat(theme),
+                    theme.info.index.directories.iter(),
+                )
+            })
+            .filter(move |(_, dir)| filter_directory(dir));
+
+        // Then, for each pair of Theme and DirectoryIndex,
+        // find all files in each suitable directory (which may be multiple, if the theme has many
+        // base directories).
+        // Item = ((&Arc<Theme>, &DirectoryIndex), IconFile)
+        let icons = dirs
+            .flat_map(move |(theme, dir)| {
+                // Each "dir" may map to multiple actual fs directories if the theme
+                // has multiple base_dirs.
+                let filter_icon = filter_icon.clone();
+                let dir_file_iterator = theme
+                    .info
+                    .base_dirs
+                    .iter()
+                    .map(|base_dir| base_dir.join(&dir.directory_name))
+                    .flat_map(|dir| dir.read_dir()) // Skip directories we can't read.
+                    .flatten() // Flatten out the dir iterator,
+                    .flatten() // and skip Err entries.
+                    .flat_map(|dir_entry| IconFile::from_path_buf(dir_entry.path())) // And then skip all files that aren't icons.
+                    .filter(move |icon| filter_icon(icon));
+
+                std::iter::zip(std::iter::repeat((theme, dir)), dir_file_iterator)
+            })
+            // And finally, turn the nested tuple ((a,b), c) into (a, b, c)
+            .map(|((a, b), c)| /*uncurry*/ (a.clone(), b, c));
+
+        icons
     }
 }
 
@@ -189,5 +288,39 @@ impl FileType {
 impl Display for FileType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.ext().to_owned())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::search::test::test_search;
+    use crate::IconFile;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_find_all_icons() {
+        let icons = test_search().search().icons();
+        let mut map: HashMap<String, Vec<IconFile>> = Default::default();
+        for (_, _, icon) in icons.find_all_icons() {
+            map.entry(icon.icon_name().to_owned())
+                .or_insert_with(Default::default)
+                .push(icon)
+        }
+
+        // "beautiful sunset" has 3 icons:
+        assert_eq!(map["beautiful sunset"].len(), 3);
+        // "happy" has 2:
+        assert_eq!(map["happy"].len(), 2);
+        // and "pixel" appears once:
+        assert_eq!(map["pixel"].len(), 1);
+
+        // "beautiful sunset" has one .xpm file:
+        assert_eq!(
+            map["beautiful sunset"]
+                .iter()
+                .filter(|ico| ico.file_type() == crate::FileType::Xpm)
+                .count(),
+            1
+        );
     }
 }

@@ -180,8 +180,6 @@ impl IconSearch<Initial> {
         IconLocations {
             standalone_icons: files,
             themes_directories,
-            #[cfg(feature = "full-search")]
-            full_icon_map: None,
         }
     }
 
@@ -273,8 +271,6 @@ pub struct IconLocations {
     pub standalone_icons: Vec<IconFile>,
     /// Map of icon theme identifiers to the directories where the icons live.
     pub themes_directories: HashMap<OsString, Vec<PathBuf>>,
-    #[cfg(feature = "full-search")]
-    full_icon_map: Option<HashMap<String, Vec<IconFile>>>,
 }
 
 impl IconLocations {
@@ -291,48 +287,6 @@ impl IconLocations {
     /// ```
     pub fn from_icon_search(dirs: &IconSearch<Initial>) -> Self {
         dirs.find_icon_locations()
-    }
-
-    /// Search for all icons in all themes and store the result.
-    #[cfg(feature = "full-search")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "full-search")))]
-    pub fn full_icon_search(&mut self) -> &HashMap<String, Vec<IconFile>> {
-        // First, initialize the "full icon map" with the standalone icons and their paths:
-        let mut full_icon_map: HashMap<_, _> = self
-            .standalone_icons
-            .iter()
-            .map(|ico| (ico.icon_name().to_owned(), vec![ico.clone()]))
-            .collect();
-
-        // Now, for each theme directory, add every file in it with a supported file extension
-        // to the map:
-        for path in self.themes_directories.values().flatten() {
-            for entry in walkdir::WalkDir::new(path)
-                .follow_links(true)
-                .into_iter()
-                .flatten()
-            {
-                // Directories are not icons.
-                if entry.file_type().is_dir() {
-                    continue;
-                }
-
-                let path = entry.into_path();
-                let Some(icon) = IconFile::from_path_buf(path) else {
-                    // This file was not a valid icon.
-                    continue;
-                };
-
-                let icons = full_icon_map
-                    .entry(icon.icon_name().to_owned())
-                    .or_insert_with(Default::default);
-
-                icons.push(icon);
-            }
-        }
-
-        self.full_icon_map = Some(full_icon_map);
-        self.full_icon_map.as_ref().unwrap()
     }
 
     /// Collects all standalone icons, themes, and all the dependencies of the themes found.
@@ -739,28 +693,8 @@ pub(crate) mod test {
                 .collect::<HashSet<_>>(),
             [16, 32, 64, 128].into()
         );
-    }
 
-    #[test]
-    #[cfg(feature = "full-search")]
-    fn test_full_icon_search() {
-        let mut icon_locations = test_search().find_icon_locations();
-        let map = icon_locations.full_icon_search();
-
-        // "beautiful sunset" has 3 icons:
-        assert_eq!(map["beautiful sunset"].len(), 3);
-        // "happy" has 2:
-        assert_eq!(map["happy"].len(), 2);
-        // and "pixel" appears once:
-        assert_eq!(map["pixel"].len(), 1);
-
-        // "beautiful sunset" has one .xpm file:
-        assert_eq!(
-            map["beautiful sunset"]
-                .iter()
-                .filter(|ico| ico.file_type() == crate::FileType::Xpm)
-                .count(),
-            1
-        );
+        let other_theme = locations.load_single_theme("OtherTheme").unwrap();
+        assert_eq!(other_theme.internal_name, "OtherTheme");
     }
 }

@@ -25,12 +25,10 @@ freedesktop_entry_parser = { version = "2.0.1", default-features = false }
 thiserror = "2.0.17"
 xdg = "3.0.0"
 log = { version = "0.4.28", optional = true }
-walkdir = { version = "2.5.0", default-features = false, optional = true }
 qp-trie = { version = "0.8.2", default-features = false, optional = true }
 
 [features]
 "log" = ["dep:log"]
-"full-search" = ["dep:walkdir"]
 "cache" = ["dep:qp-trie"]
 
 [dev-dependencies]
