@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use std::sync::Arc;
 
-/// Cached version of [`Icons`].
+/// Caching version of [`Icons`].
 ///
 /// # Example
 ///
@@ -14,11 +14,15 @@ use std::sync::Arc;
 ///
 /// let mut cache: IconsCache = Icons::new().into();
 /// cache.find_icon("firefox", 128, 1, "Adwaita");
-/// // Subsequent queries for "firefox" will utilize the cache.
+/// // Subsequent queries for any size/scale for "firefox" will utilize the cache.
 /// ```
 pub struct IconsCache {
     /// The [`Icons`] this cache was created from.
     icons: Icons,
+    /// Mirrors `icons.themes`, but with all caches.
+    /// The implementation should make sure that all keys present in `icons.themes`,
+    /// also appear in this map. For the same reason, both `icons` and `themes` aren't `pub`;
+    /// otherwise users could break that invariant.
     themes: HashMap<OsString, ThemeCache>,
 }
 
@@ -30,7 +34,7 @@ impl IconsCache {
 
     /// Like [`find_icon`](self.find_icon), with `theme` being `"hicolor"`, which is the default icon theme.
     ///
-    /// Cached version of [`Icons::find_default_icon`]
+    /// Caching version of [`Icons::find_default_icon`]
     pub fn find_default_icon(
         &mut self,
         icon_name: &str,
@@ -42,7 +46,7 @@ impl IconsCache {
 
     /// Look up an icon by name, size, scale and theme.
     ///
-    /// Cache version of [`Icons::find_icon`]. For more details on how icon matching works,
+    /// Caching version of [`Icons::find_icon`]. For more details on how icon matching works,
     /// check out the documentation of [`Icons::find_icon`].
     pub fn find_icon(
         &mut self,
@@ -104,12 +108,10 @@ impl From<Icons> for IconsCache {
     }
 }
 
-/// Cached version of [`Theme`].
+/// Caching version of [`Theme`].
 pub struct ThemeCache {
     theme: Arc<Theme>,
-    // Cache of directory names to an Option indicating:
-    // - Some(base_dir): the icon exists in this directory, in base_dir.
-    // - None: the icon doesn't exist in this directory
+    // Cache of icon names to a list of files and the ref (index) of the directory they're in.
     cache: qp_trie::Trie<BString, Vec<(DirectoryRef, IconFile)>>,
 }
 
@@ -159,6 +161,7 @@ impl ThemeCache {
         }
 
         // else, find the closest match:
+        // TODO(performance): can early return when min-distance == 0
         let icon = icon_files.iter().min_by_key(|(dir, _)| {
             let dir = &self.theme.info.index.directories[*dir];
 

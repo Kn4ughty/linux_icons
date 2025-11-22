@@ -27,6 +27,9 @@ impl Theme {
 
     /// Find an icon in this theme or any of its dependencies.
     ///
+    /// This function seeks to replicate the behaviour from the official icon lookup mechanism from
+    /// the Icon Theme specification, which you can find [here](https://specifications.freedesktop.org/icon-theme/latest/#icon_lookup).
+    ///
     /// Arguments:
     /// - `icon_name`: the canonical name of the icon **without** file extension.
     /// - `size`: the size, in pixels, desired. The returned icon may not be this exact size in case an exact match couldn't be found.
