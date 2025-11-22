@@ -8,7 +8,7 @@ use std::sync::Arc;
 /// Cached version of [`Icons`].
 pub struct IconsCache {
     /// The [`Icons`] this cache was created from.
-    pub icons: Icons,
+    icons: Icons,
     themes: HashMap<OsString, ThemeCache>,
 }
 
@@ -74,6 +74,11 @@ impl IconsCache {
     /// Cache version of [Icons::find_standalone_icon].
     pub fn find_standalone_icon(&self, icon_name: &str) -> Option<IconFile> {
         self.icons.find_standalone_icon(icon_name)
+    }
+
+    /// Access the [`Icons`] this cache uses.
+    pub fn icons(&self) -> &Icons {
+        &self.icons
     }
 }
 
