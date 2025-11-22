@@ -17,6 +17,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build
+      run: cargo build --all-features
     - name: Run tests
-      run: cargo test -- --skip find_all_desktop_entry_icons
+      run: cargo test --all-features -- --skip find_all_desktop_entry_icons
