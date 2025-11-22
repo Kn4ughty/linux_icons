@@ -84,6 +84,8 @@
 mod icon;
 mod search;
 mod theme;
+#[cfg(feature = "cache")]
+mod cache;
 
 pub use icon::*;
 pub use search::*;
