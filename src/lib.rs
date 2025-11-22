@@ -75,9 +75,11 @@
 //!   - it does not scan "standalone" icons correctly, such as those usually found in `/usr/share/pixmaps`.
 //!   - it adopts a one-shot approach, repeating all parsing and file-finding work for each icon.
 //!   - it does not provide support for caching.
+//!   - it does not perform spec-compliant icon matching. (no support for "closest" icon matching, among other problems)
 //!
 //! - [icon-loader](https://crates.io/crates/icon-loader) also implements icon finding, but:
 //!   - like `linicon`, it does not scan "standalone" icons correctly.
+//!   - it does not perform spec-compliant icon matching. (does not match icons in directory size ranges correctly)
 //!   - it only supports a rust-native icon cache, which you cannot opt out of.
 //!   - it provides only icon loading—you cannot use it to obtain information about Icon Themes.
 
