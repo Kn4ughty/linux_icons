@@ -141,8 +141,7 @@ impl Icons {
         // First, find each icon theme, filtered by the `filter_theme` argument:
         let themes = self
             .themes
-            .iter()
-            .map(|(_, theme)| theme)
+            .values()
             .filter(move |theme| filter_theme(theme.as_ref()));
 
         // Create an iterator that yields each icon theme × icon theme's directories
@@ -160,8 +159,7 @@ impl Icons {
         // find all files in each suitable directory (which may be multiple, if the theme has many
         // base directories).
         // Item = ((&Arc<Theme>, &DirectoryIndex), IconFile)
-        let icons = dirs
-            .flat_map(move |(theme, dir)| {
+        dirs.flat_map(move |(theme, dir)| {
                 // Each "dir" may map to multiple actual fs directories if the theme
                 // has multiple base_dirs.
                 let filter_icon = filter_icon.clone();
@@ -179,9 +177,7 @@ impl Icons {
                 std::iter::zip(std::iter::repeat((theme, dir)), dir_file_iterator)
             })
             // And finally, turn the nested tuple ((a,b), c) into (a, b, c)
-            .map(|((a, b), c)| /*uncurry*/ (a.clone(), b, c));
-
-        icons
+            .map(|((a, b), c)| /*uncurry*/ (a.clone(), b, c))
     }
 }
 

@@ -69,6 +69,36 @@ impl IconsCache {
             .or_else(|| self.find_standalone_icon(icon_name))
     }
 
+    /// Using [`Icons::find_all_icons`], populate the cache with all icons available.
+    ///
+    /// As finding all icons may be much faster than finding many icons separately,
+    /// you may opt to use this function if your application expects to be loading (almost) all
+    /// icons anyway.
+    pub fn pre_populate_cache(&mut self) {
+        for (theme, dir, icon) in self.icons.find_all_icons() {
+            let theme = self.themes.get_mut(theme.info.internal_name.as_os_str());
+
+            let Some(theme) = theme else {
+                #[cfg(feature = "log")]
+                log::warn!("skipping theme without a cache entry, this shouldn't ever happen!");
+                continue;
+            };
+
+            let dir_ref = theme.theme.info.index.directories.iter()
+                .position(|d| std::ptr::eq(d, dir));
+
+            let Some(dir_ref) = dir_ref else {
+                #[cfg(feature = "log")]
+                log::warn!("couldn't find index of directory in theme, this should never happen!");
+                continue;
+            };
+
+            theme.cache.entry(icon.icon_name().into())
+                .or_insert_with(Default::default)
+                .push((dir_ref, icon));
+        }
+    }
+
     /// Access a known icon theme cache by name.
     ///
     /// Analogous to [`Icons::theme`].
@@ -188,6 +218,7 @@ impl From<Arc<Theme>> for ThemeCache {
 
 #[cfg(test)]
 mod test {
+    use std::ffi::OsString;
     use crate::cache::{IconsCache, ThemeCache};
     use crate::search::test::test_search;
 
@@ -231,5 +262,19 @@ mod test {
             icon_original, icon,
             "cached icon is the same as the original"
         );
+    }
+
+    #[test]
+    fn test_pre_population() {
+        let mut icons = test_search().search().icons_cached();
+
+        assert_eq!(icons.themes.len(), 2, "test themes in cache");
+        assert!(icons.themes.iter().all(|(_, c)| c.cache.count() == 0), "no icons in cache");
+
+        icons.pre_populate_cache();
+
+        assert_eq!(icons.themes.len(), 2, "test themes in cache");
+        assert_eq!(icons.themes[&OsString::from("TestTheme")].cache.count(), 2);
+        assert_eq!(icons.themes[&OsString::from("OtherTheme")].cache.count(), 1);
     }
 }
