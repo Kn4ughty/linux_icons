@@ -245,6 +245,8 @@ pub enum FileType {
     Xpm,
     /// `.svg` files (Scalable Vector Graphics), for images that can be scaled to an arbitrary size.
     Svg,
+    /// `.ico` files (Windows icon), for applications that are not packaged correctly
+    Ico,
 }
 
 impl FileType {
@@ -253,14 +255,12 @@ impl FileType {
         let ext = path.extension()?;
         let ext = ext.to_str()?;
 
-        if ext.eq_ignore_ascii_case("png") {
-            Some(FileType::Png)
-        } else if ext.eq_ignore_ascii_case("xpm") {
-            Some(FileType::Xpm)
-        } else if ext.eq_ignore_ascii_case("svg") {
-            Some(FileType::Svg)
-        } else {
-            None
+        match ext.to_ascii_lowercase().as_str() {
+            "png" => Some(FileType::Png),
+            "xpm" => Some(FileType::Xpm),
+            "svg" => Some(FileType::Svg),
+            "ico" => Some(FileType::Ico),
+            _ => None,
         }
     }
 
@@ -272,12 +272,13 @@ impl FileType {
             FileType::Png => "png",
             FileType::Xpm => "xpm",
             FileType::Svg => "svg",
+            FileType::Ico => "ico",
         }
     }
 
     /// Returns an array of all file types that icons may appear as.
-    pub const fn types() -> [FileType; 3] {
-        [FileType::Png, FileType::Xpm, FileType::Svg]
+    pub const fn types() -> [FileType; 4] {
+        [FileType::Png, FileType::Xpm, FileType::Svg, FileType::Ico]
     }
 }
 
