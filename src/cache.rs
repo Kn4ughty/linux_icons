@@ -83,7 +83,12 @@ impl IconsCache {
                 continue;
             };
 
-            let dir_ref = theme.theme.info.index.directories.iter()
+            let dir_ref = theme
+                .theme
+                .info
+                .index
+                .directories
+                .iter()
                 .position(|d| std::ptr::eq(d, dir));
 
             let Some(dir_ref) = dir_ref else {
@@ -92,7 +97,9 @@ impl IconsCache {
                 continue;
             };
 
-            theme.cache.entry(icon.icon_name().into())
+            theme
+                .cache
+                .entry(icon.icon_name().into())
                 .or_insert_with(Default::default)
                 .push((dir_ref, icon));
         }
@@ -217,10 +224,10 @@ impl From<Arc<Theme>> for ThemeCache {
 
 #[cfg(test)]
 mod test {
-    use std::ffi::OsString;
-    use crate::cache::{IconsCache, ThemeCache};
     use crate::IconSearch;
+    use crate::cache::{IconsCache, ThemeCache};
     use crate::search::test::test_search;
+    use std::ffi::OsString;
 
     #[test]
     fn test_icons_cached() {
@@ -269,7 +276,10 @@ mod test {
         let mut icons = test_search().search().icons_cached();
 
         assert_eq!(icons.themes.len(), 2, "test themes in cache");
-        assert!(icons.themes.iter().all(|(_, c)| c.cache.len() == 0), "no icons in cache");
+        assert!(
+            icons.themes.iter().all(|(_, c)| c.cache.len() == 0),
+            "no icons in cache"
+        );
 
         icons.pre_populate_cache();
 
