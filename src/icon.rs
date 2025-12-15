@@ -245,7 +245,7 @@ pub enum FileType {
     Xpm,
     /// `.svg` files (Scalable Vector Graphics), for images that can be scaled to an arbitrary size.
     Svg,
-    /// `.ico` files (Windows icon), for applications that are not packaged correctly
+    /// `.ico` files (Windows icon). This filetype is not allowed by the specification, but is sometimes used in practice.
     Ico,
 }
 
