@@ -31,6 +31,7 @@ ahash = "0.8.12"
 [features]
 "log" = ["dep:log"]
 "cache" = ["dep:smol_str"]
+"ico" = []
 
 [dev-dependencies]
 freedesktop-desktop-entry = "0.7.13"
