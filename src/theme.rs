@@ -113,6 +113,12 @@ impl Theme {
             .filter(move |sub_dir| sub_dir.matches_size(size, scale))
     }
 
+    #[cfg(not(feature = "ico"))]
+    fn possible_file_names_for(icon_name: &str) -> [String; 3] {
+        FileType::types().map(|ext| format!("{icon_name}.{ext}"))
+    }
+
+    #[cfg(feature = "ico")]
     fn possible_file_names_for(icon_name: &str) -> [String; 4] {
         FileType::types().map(|ext| format!("{icon_name}.{ext}"))
     }

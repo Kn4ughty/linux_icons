@@ -245,6 +245,7 @@ pub enum FileType {
     Xpm,
     /// `.svg` files (Scalable Vector Graphics), for images that can be scaled to an arbitrary size.
     Svg,
+    #[cfg(feature = "ico")]
     /// `.ico` files (Windows icon). This filetype is not allowed by the specification, but is sometimes used in practice.
     Ico,
 }
@@ -259,6 +260,7 @@ impl FileType {
             "png" => Some(FileType::Png),
             "xpm" => Some(FileType::Xpm),
             "svg" => Some(FileType::Svg),
+            #[cfg(feature = "ico")]
             "ico" => Some(FileType::Ico),
             _ => None,
         }
@@ -272,13 +274,21 @@ impl FileType {
             FileType::Png => "png",
             FileType::Xpm => "xpm",
             FileType::Svg => "svg",
+            #[cfg(feature = "ico")]
             FileType::Ico => "ico",
         }
     }
 
     /// Returns an array of all file types that icons may appear as.
+    #[cfg(feature = "ico")]
     pub const fn types() -> [FileType; 4] {
         [FileType::Png, FileType::Xpm, FileType::Svg, FileType::Ico]
+    }
+
+    /// Returns an array of all file types that icons may appear as.
+    #[cfg(not(feature = "ico"))]
+    pub const fn types() -> [FileType; 3] {
+        [FileType::Png, FileType::Xpm, FileType::Svg]
     }
 }
 
