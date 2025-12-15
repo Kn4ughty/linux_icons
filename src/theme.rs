@@ -1,5 +1,5 @@
 use crate::ThemeParseError::MissingRequiredAttribute;
-use crate::icon::IconFile;
+use crate::icon::{FileType, IconFile};
 use freedesktop_entry_parser::low_level::{SectionBytes, SectionBytesIter};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -113,10 +113,8 @@ impl Theme {
             .filter(move |sub_dir| sub_dir.matches_size(size, scale))
     }
 
-    fn possible_file_names_for(icon_name: &str) -> [String; 3] {
-        const EXTENSIONS: [&str; 3] = ["png", "xpm", "svg"];
-
-        EXTENSIONS.map(|ext| format!("{icon_name}.{ext}"))
+    fn possible_file_names_for(icon_name: &str) -> [String; 4] {
+        FileType::types().map(|ext| format!("{icon_name}.{ext}"))
     }
 
     pub(crate) fn find_icon_in_directory(
