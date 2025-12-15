@@ -569,6 +569,17 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "ico")]
+    fn test_find_ico_icon() {
+        let icons = test_search().search().icons();
+
+        let tux_ico = icons.find_icon("tux", 32, 1, "TestTheme").unwrap();
+
+        assert!(tux_ico.path().ends_with("TestTheme/32x32/foo/tux.ico"));
+        assert_eq!(tux_ico.file_type(), FileType::Ico);
+    }
+
+    #[test]
     fn find_all_desktop_entry_icons() {
         let icons = Icons::new();
 

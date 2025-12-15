@@ -274,7 +274,7 @@ mod test {
         icons.pre_populate_cache();
 
         assert_eq!(icons.themes.len(), 2, "test themes in cache");
-        assert_eq!(icons.themes[&OsString::from("TestTheme")].cache.count(), 2);
+        assert_eq!(icons.themes[&OsString::from("TestTheme")].cache.count(), 3);
         assert_eq!(icons.themes[&OsString::from("OtherTheme")].cache.count(), 1);
     }
 }
