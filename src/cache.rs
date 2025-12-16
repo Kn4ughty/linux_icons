@@ -284,7 +284,13 @@ mod test {
         icons.pre_populate_cache();
 
         assert_eq!(icons.themes.len(), 2, "test themes in cache");
+
+        // only count the .ico if the ico feature is enabled
+        #[cfg(feature = "ico")]
+        assert_eq!(icons.themes[&OsString::from("TestTheme")].cache.len(), 3);
+        #[cfg(not(feature = "ico"))]
         assert_eq!(icons.themes[&OsString::from("TestTheme")].cache.len(), 2);
+
         assert_eq!(icons.themes[&OsString::from("OtherTheme")].cache.len(), 1);
     }
 }
